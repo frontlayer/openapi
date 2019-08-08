@@ -1,0 +1,22 @@
+sudo: false
+language: php
+
+matrix:
+  fast_finish: true
+  include:
+    - php: 7.2
+    - php: 7.3
+
+#before_install:
+#  - sudo apt-get update
+#  - sudo apt-get -y install build-essential
+#  - sudo apt-get -y install libyaml-dev
+#  - sudo pecl install yaml
+#  - sudo pecl install yaml-2.0.0
+#  - echo "extension=yaml.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+#  - php -m
+
+install:
+  - composer install
+
+script: "php tests/run.php"

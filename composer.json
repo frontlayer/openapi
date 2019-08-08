@@ -1,0 +1,19 @@
+{
+  "name": "frontlayer/openapi",
+  "description": "Open Api Request Validator",
+  "version": "0.1",
+  "autoload": {
+    "psr-4": {
+      "FrontLayer\\OpenApi\\": "./src/"
+    }
+  },
+  "require": {
+    "frontlayer/json-schema": "dev-master",
+    "php": "^7.2.0",
+    "ext-yaml": "*",
+    "ext-json": "*"
+  },
+  "scripts": {
+    "test": "php ./tests/run.php"
+  }
+}

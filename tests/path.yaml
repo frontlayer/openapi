@@ -1,0 +1,121 @@
+paths:
+  /basic:
+    get:
+      $tests:
+        match:
+          - '/basic'
+        notMatch:
+          - '/something'
+          - '/basicc'
+          - '/basic/'
+  /basic/again:
+    parameters:
+      - name: param1
+        in: query
+        schema:
+          type: string
+    get:
+      parameters:
+        - name: param2
+          in: query
+          schema:
+            type: string
+      $tests:
+        match:
+          - '/basic/again'
+        notMatch:
+          - '/'
+  /with/{param}:
+    parameters:
+      - name: param
+        in: path
+        schema:
+          type: string
+    get:
+      $tests:
+        match:
+          - '/with/str'
+          - '/with/ok'
+        notMatch:
+          - '/with/str/' # slash at the end
+          - '/with//'
+          - '/with'
+          - '/withhhhh'
+          - '/with/'
+  /few-params/{param1}/{param2}/{param3}:
+    parameters:
+      - name: param1
+        in: path
+        schema:
+          type: string
+          const: c
+      - name: param2
+        in: path
+        schema:
+          type: integer
+      - name: param3
+        in: path
+        schema: true
+    get:
+      $tests:
+        match:
+          - '/few-params/c/2/ok'
+          - '/few-params/c/2/2.0'
+        notMatch:
+          - '/with/str/'
+          - '/with//'
+          - '/with'
+          - '/withhhhh'
+          - '/with/'
+  /schema-false/{param}:
+    parameters:
+      - name: param
+        in: path
+        schema: false
+    get:
+      $tests:
+        match: []
+        notMatch:
+          - '/schema-false/param'
+          - '/schema-false/param/'
+  /with/slash/at/the/end/:
+    get:
+      $tests:
+        match:
+          - '/with/slash/at/the/end/'
+        notMatch:
+          - '/with/slash/at/the/end'
+          - '/with/slash/at/the/end/extra-path'
+  /params-mix/{param1}/middle/{param2}:
+    parameters:
+      - name: param1
+        in: path
+        schema:
+          type: string
+    get:
+      parameters:
+        - name: param2
+          in: path
+          schema:
+            type: integer
+      $tests:
+        match:
+          - '/params-mix/ok/middle/1'
+          - '/params-mix/ok/middle/1.0'
+        notMatch:
+          - '/params-mix'
+          - '/params-mix/middle/str/1.1'
+          - '/params-mix/middle/ok/1/'
+    post:
+      parameters:
+        - name: param2
+          in: path
+          schema:
+            type: boolean
+      $tests:
+        match:
+          - '/params-mix/ok/middle/true'
+        notMatch:
+          - '/params-mix'
+          - '/params-mix/middle/str/yes'
+          - '/params-mix/middle/ok/true/'
