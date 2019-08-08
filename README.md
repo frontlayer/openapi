@@ -10,3 +10,4 @@
 - Add versions for composer
 - Grammatically correct comments and exceptions
 - Add phpunit
+- Optimize $ref and use it only in the places where OpenApi says it can be used
