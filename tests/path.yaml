@@ -1,3 +1,4 @@
+openapi: 3.0.0
 paths:
   /basic:
     get:
@@ -119,3 +120,8 @@ paths:
           - '/params-mix'
           - '/params-mix/middle/str/yes'
           - '/params-mix/middle/ok/true/'
+  /non-declared-params/{param1}/{param2}:
+    get:
+      $tests:
+        notMatch:
+          - '/everything'

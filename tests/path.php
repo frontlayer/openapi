@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require __DIR__ . './../vendor/autoload.php';
+
 class TestPaths
 {
     protected $tests;
@@ -43,13 +45,14 @@ class TestPaths
                             $request->setMethod($method);
 
                             $testSpecification = new \FrontLayer\OpenApi\Specification((object)[
+                                'openapi' => '3.0.0',
                                 'paths' => (object)[
                                     $path => $pathSpecification
                                 ]
                             ]);
 
                             $zzzz = new \FrontLayer\OpenApi\Path($testSpecification, $request, $this->validator);
-                            $zzzz->getSpecification();
+                            $zzzz->getOperationSpecification();
                             $zzzz->getParameters();
                         } catch (\Exception $e) {
                             var_dump('MATCH FAIL');
@@ -68,6 +71,7 @@ class TestPaths
                             $request->setMethod($method);
 
                             $testSpecification = new \FrontLayer\OpenApi\Specification((object)[
+                                'openapi' => '3.0.0',
                                 'paths' => (object)[
                                     $path => $pathSpecification
                                 ]
@@ -78,7 +82,7 @@ class TestPaths
                             var_dump('-----');
                             var_dump('NOT MATCH FAIL');
                             var_dump($method . '::' . $expect);
-                        } catch (\Exception $e) {
+                        } catch (\FrontLayer\OpenApi\PathNotFoundException $e) {
                         }
                     }
                 }

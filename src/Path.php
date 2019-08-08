@@ -14,7 +14,7 @@ class Path
 
     protected $validator;
 
-    protected $matchSpecification = null;
+    protected $operationSpecification = null;
 
     protected $matchParameters = [];
 
@@ -29,9 +29,9 @@ class Path
         $this->match();
     }
 
-    public function getSpecification(): ?object
+    public function getOperationSpecification(): ?object
     {
-        return $this->matchSpecification;
+        return $this->operationSpecification;
     }
 
     public function getParameters(): object
@@ -46,7 +46,6 @@ class Path
         $partsLength = count($requestParts);
 
         foreach ($this->specification->storage()->paths as $path => $pathData) {
-            $allParameters = [];
             $hasPathParameters = strstr($path, '{') !== false;
 
             // Quick check is the method exist
@@ -55,20 +54,18 @@ class Path
             }
 
             // Collect parameters
-            if (property_exists($pathData->{$requestMethod}, 'parameters')) {
-                $allParameters = array_merge($allParameters, $pathData->{$requestMethod}->parameters);
-            }
+            $operationParameters = [];
 
-            if (property_exists($pathData, 'parameters')) {
-                $allParameters = array_merge($allParameters, $pathData->parameters);
+            if (property_exists($pathData->{$requestMethod}, 'parameters')) {
+                $operationParameters = $pathData->{$requestMethod}->parameters;
             }
 
             if (!$hasPathParameters) {
                 // Quick check for exact match if there is no path parameters
                 if ($this->request->getPath() === $path) {
                     // Set match specification
-                    $this->matchSpecification = $pathData->{$requestMethod};
-                    $this->matchSpecification->parameters = $allParameters;
+                    $this->operationSpecification = $pathData->{$requestMethod};
+                    $this->operationSpecification->parameters = $operationParameters;
 
                     // Break the check
                     return;
@@ -84,7 +81,7 @@ class Path
 
                 // Collect path parameters
                 $pathParameters = (object)[];
-                foreach ($allParameters as $parameter) {
+                foreach ($operationParameters as $parameter) {
                     if ($parameter->in === 'path') {
                         $pathParameters->{$parameter->name} = $parameter->schema;
                     }
@@ -126,8 +123,8 @@ class Path
                 // If all match
                 {
                     // Set match specification
-                    $this->matchSpecification = $pathData->{$requestMethod};
-                    $this->matchSpecification->parameters = $allParameters;
+                    $this->operationSpecification = $pathData->{$requestMethod};
+                    $this->operationSpecification->parameters = $operationParameters;
 
                     // Break the check
                     return;
