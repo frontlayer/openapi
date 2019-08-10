@@ -7,15 +7,15 @@ matrix:
     - php: 7.2
     - php: 7.3
 
-# yaml install
-before_install:
-  - pecl channel-update pecl.php.net
-  - (CFLAGS="-O1 -g3 -fno-strict-aliasing"; pecl install yaml < /dev/null &)
-
 addons:
   apt:
     packages:
       - libyaml-dev
+
+before_install:
+  - printf "\n" | pecl install yaml-beta
+  - echo "extension=yaml.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - composer install --dev
 
 install:
   - composer install
