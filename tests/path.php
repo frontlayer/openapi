@@ -104,6 +104,6 @@ class TestPaths
     }
 }
 
-$testSpecification = json_decode(json_encode(yaml_parse_file('./path.yaml')));
+$testSpecification = json_decode(json_encode(yaml_parse_file(__DIR__ . '/path.yaml')));
 $testPath = new TestPaths($testSpecification);
 $testPath->run();

@@ -17,10 +17,10 @@ class TestSpec
 
     public function run(): void
     {
-        var_dump($this->specification->storage());
+        //var_dump($this->specification->storage());
     }
 }
 
-$testSpecification = json_decode(json_encode(yaml_parse_file('./spec.yaml')));
+$testSpecification = json_decode(json_encode(yaml_parse_file(__DIR__ . '/spec.yaml')));
 $testPath = new TestSpec($testSpecification);
 $testPath->run();
