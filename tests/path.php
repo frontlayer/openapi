@@ -1,87 +1,83 @@
 <?php
 declare(strict_types=1);
 
+use FrontLayer\JsonSchema\Validator;
+use FrontLayer\OpenApi\PathMatch;
+use FrontLayer\OpenApi\Request;
+use FrontLayer\OpenApi\Specification;
+
 require __DIR__ . './../vendor/autoload.php';
 
 class TestPaths
 {
-    protected $tests;
+    /**
+     * Test specification
+     * @var Specification
+     */
+    protected $specification;
 
+    /**
+     * Validator
+     * @var Validator
+     */
     protected $validator;
 
-    public function __construct(object $tests)
+    /**
+     * TestPaths constructor
+     * @param Specification $specification
+     */
+    public function __construct(Specification $specification)
     {
-        $this->tests = $tests;
-        $this->validator = new \FrontLayer\JsonSchema\Validator();
+        $this->specification = $specification;
+        $this->validator = new Validator(Validator::MODE_CAST);
     }
 
     public function run(): void
     {
-        foreach ($this->tests->paths as $path => $pathSpecification) {
-            $parameters = (object)[];
-
-            // Get global path parameters
-            $parameters = $this->collectPathParameters($pathSpecification, $parameters);
-
-            // Check each method
-            foreach ($pathSpecification as $method => $methodData) {
-                // Skip non-method properties
-                if (!in_array($method, ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'])) {
-                    continue;
-                }
-
-                // Get method parameters
-                $parameters = $this->collectPathParameters($methodData, $parameters);
-
+        foreach ($this->specification->storage()->paths as $path => $operations) {
+            foreach ($operations as $method => $operation) {
                 // Get tests
-                $tests = $methodData->{'$tests'};
+                $tests = $operation->{'x-tests'};
 
                 // Test matches
-                if (!empty($tests->match)) {
-                    foreach ($tests->match as $expect) {
+                if (!empty($tests->correct)) {
+                    foreach ($tests->correct as $expectPath) {
                         try {
-                            $request = new \FrontLayer\OpenApi\Request();
-                            $request->setPath($expect);
+                            // Prepare the emulated request
+                            $request = new Request();
+                            $request->setPath($expectPath);
                             $request->setMethod($method);
 
-                            $testSpecification = new \FrontLayer\OpenApi\Specification((object)[
-                                'openapi' => '3.0.0',
-                                'paths' => (object)[
-                                    $path => $pathSpecification
-                                ]
-                            ]);
+                            $match = new PathMatch($this->specification, $request, $this->validator);
+                            $match->getOperationSpecification();
+                            $match->getParameters();
 
-                            $zzzz = new \FrontLayer\OpenApi\Path($testSpecification, $request, $this->validator);
-                            $zzzz->getOperationSpecification();
-                            $zzzz->getParameters();
+                            if (!in_array($expectPath, $match->getOperationSpecification()->{'x-tests'}->correct, true)) {
+                                throw new \Exception('Incorrect match');
+                            }
                         } catch (\Exception $e) {
                             var_dump('MATCH FAIL');
                             var_dump($e->getMessage());
-                            var_dump($method . '::' . $expect);
+                            var_dump($method . '::' . $expectPath);
                         }
                     }
                 }
 
                 // Test non matches
-                if (!empty($tests->notMatch)) {
-                    foreach ($tests->notMatch as $expect) {
+                if (!empty($tests->wrong)) {
+                    foreach ($tests->wrong as $expectPath) {
                         try {
-                            $request = new \FrontLayer\OpenApi\Request();
-                            $request->setPath($expect);
+                            $request = new Request();
+                            $request->setPath($expectPath);
                             $request->setMethod($method);
 
-                            $testSpecification = new \FrontLayer\OpenApi\Specification((object)[
-                                'openapi' => '3.0.0',
-                                'paths' => (object)[
-                                    $path => $pathSpecification
-                                ]
-                            ]);
-
-                            new \FrontLayer\OpenApi\Path($testSpecification, $request, $this->validator);
+                            $match = new PathMatch($this->specification, $request, $this->validator);
+                            $match->getOperationSpecification();
+                            $match->getParameters();
 
                             var_dump('-----');
                             var_dump('NOT MATCH FAIL');
-                            var_dump($method . '::' . $expect);
+                            var_dump($method . '::' . $expectPath);
                         } catch (\FrontLayer\OpenApi\PathNotFoundException $e) {
                         }
                     }
@@ -89,21 +85,8 @@ class TestPaths
             }
         }
     }
-
-    public function collectPathParameters(object $object, object $currentParameters): object
-    {
-        if (property_exists($object, 'parameters')) {
-            foreach ($object->parameters as $parameter) {
-                if ($parameter->in === 'path') {
-                    $currentParameters->{$parameter->name} = $parameter->schema;
-                }
-            }
-        }
-
-        return $currentParameters;
-    }
 }
 
-$testSpecification = json_decode(json_encode(yaml_parse_file(__DIR__ . '/path.yaml')));
-$testPath = new TestPaths($testSpecification);
+$specification = new Specification(json_decode(json_encode(yaml_parse_file(__DIR__ . '/path.yaml'))));
+$testPath = new TestPaths($specification);
 $testPath->run();

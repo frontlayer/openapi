@@ -6,7 +6,7 @@ namespace FrontLayer\OpenApi;
 use FrontLayer\JsonSchema\ValidationException;
 use FrontLayer\JsonSchema\Validator;
 
-class Path
+class PathMatch
 {
     protected $specification;
 
@@ -18,13 +18,14 @@ class Path
 
     protected $matchParameters = [];
 
-    public function __construct(Specification $specification, Request $request, Validator $validator)
+    public function __construct(Specification $specification, Request $request)
     {
-        $this->matchParameters = (object)[]; // @todo move it to class body when PHP is ready for this syntax
+        $this->matchParameters = (object)[];
 
         $this->specification = $specification;
         $this->request = $request;
-        $this->validator = $validator;
+
+        $this->validator = new Validator(Validator::MODE_CAST);
 
         $this->match();
     }
@@ -45,27 +46,20 @@ class Path
         $requestParts = explode('/', $this->request->getPath());
         $partsLength = count($requestParts);
 
-        foreach ($this->specification->storage()->paths as $path => $pathData) {
+        foreach ($this->specification->storage()->paths as $path => $operations) {
             $hasPathParameters = strstr($path, '{') !== false;
 
             // Quick check is the method exist
-            if (!property_exists($pathData, $requestMethod)) {
+            if (!property_exists($operations, $requestMethod)) {
                 continue;
             }
 
             // Collect parameters
-            $operationParameters = [];
-
-            if (property_exists($pathData->{$requestMethod}, 'parameters')) {
-                $operationParameters = $pathData->{$requestMethod}->parameters;
-            }
-
             if (!$hasPathParameters) {
                 // Quick check for exact match if there is no path parameters
                 if ($this->request->getPath() === $path) {
                     // Set match specification
-                    $this->operationSpecification = $pathData->{$requestMethod};
-                    $this->operationSpecification->parameters = $operationParameters;
+                    $this->operationSpecification = $operations->{$requestMethod};
 
                     // Break the check
                     return;
@@ -79,17 +73,9 @@ class Path
                     continue;
                 }
 
-                // Collect path parameters
+                // Check hardcoded directories (which are not parameters)
+                // In the same time build the parameters object which will be validated against the path schema
                 $pathParameters = (object)[];
-                foreach ($operationParameters as $parameter) {
-                    if ($parameter->in === 'path') {
-                        $pathParameters->{$parameter->name} = $parameter->schema;
-                    }
-                }
-
-                // Check parts
-                $successfulParts = 0;
-
                 for ($i = 0; $i < $partsLength; $i++) {
                     if (substr($specificationPathParts[$i], 0, 1) == '{' && substr($specificationPathParts[$i], -1) == '}') {
                         // Get param name
@@ -97,34 +83,30 @@ class Path
 
                         // Empty values are not allowed in params check
                         if (!$requestParts[$i]) {
-                            break;
+                            continue 2;
                         }
 
-                        // Try to validate
-                        try {
-                            // If parameters is valid then cast the data and set it to match parameters
-                            $this->matchParameters->{$paramName} = $this->validator->validate($requestParts[$i], $pathParameters->{$paramName}, Validator::MODE_CAST);
-                        } catch (ValidationException $e) {
-                            // Param is not valid against schema
-                            break;
-                        }
+                        // Build the parameters collection
+                        $pathParameters->{$paramName} = $requestParts[$i];
                     } elseif ($requestParts[$i] !== $specificationPathParts[$i]) {
                         // Non param parts not match
-                        break;
+                        continue 2;
                     }
-
-                    $successfulParts++;
                 }
 
-                if ($successfulParts !== $partsLength) {
-                    break;
+                // Validate parameters collection
+                try {
+                    $pathParametersSchema = $operations->{$requestMethod}->parameters->path;
+                    $this->matchParameters = $this->validator->validate($pathParameters, $pathParametersSchema);
+                } catch (ValidationException $e) {
+                    // Params are not valid against schema
+                    continue;
                 }
 
                 // If all match
                 {
                     // Set match specification
-                    $this->operationSpecification = $pathData->{$requestMethod};
-                    $this->operationSpecification->parameters = $operationParameters;
+                    $this->operationSpecification = $operations->{$requestMethod};
 
                     // Break the check
                     return;

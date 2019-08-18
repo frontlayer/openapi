@@ -64,7 +64,7 @@ class Request
 
         // Set content type
         $contentType = $_SERVER['CONTENT_TYPE'];
-        $contentType = preg_replace('[\;.*]', '', $contentType);
+        $contentType = preg_replace('[;.*]', '', $contentType);
         $this->setContentType($contentType ?: null);
 
         // Set method
@@ -86,29 +86,29 @@ class Request
         $body = null;
         switch ($this->getContentType()) {
             case 'application/json':
-                {
-                    $body = file_get_contents('php://input');
+            {
+                $body = file_get_contents('php://input');
 
-                    if ($this->getContentType() == 'application/json') {
-                        try {
-                            $body = json_decode($body);
-                        } catch (\Exception $e) {
-                            throw new RequestException('Wrong JSON input');
-                        }
+                if ($this->getContentType() == 'application/json') {
+                    try {
+                        $body = json_decode($body);
+                    } catch (\Exception $e) {
+                        throw new RequestException('Wrong JSON input');
                     }
-
-                    break;
                 }
+
+                break;
+            }
             case 'multipart/form-data':
-                {
-                    $body = (object)[];
+            {
+                $body = (object)[];
 
-                    foreach ($_FILES as $fileId => $row) {
-                        $body->{$fileId} = file_get_contents($row['tmp_name']);
-                    }
-
-                    break;
+                foreach ($_FILES as $fileId => $row) {
+                    $body->{$fileId} = file_get_contents($row['tmp_name']);
                 }
+
+                break;
+            }
         }
         $this->setBody($body);
 

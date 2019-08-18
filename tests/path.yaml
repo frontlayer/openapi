@@ -1,11 +1,17 @@
 openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Paths tests
 paths:
   /basic:
     get:
-      $tests:
-        match:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct:
           - '/basic'
-        notMatch:
+        wrong:
           - '/something'
           - '/basicc'
           - '/basic/'
@@ -21,23 +27,30 @@ paths:
           in: query
           schema:
             type: string
-      $tests:
-        match:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct:
           - '/basic/again'
-        notMatch:
+        wrong:
           - '/'
   /with/{param}:
     parameters:
       - name: param
         in: path
+        required: true
         schema:
           type: string
     get:
-      $tests:
-        match:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct:
           - '/with/str'
           - '/with/ok'
-        notMatch:
+        wrong:
           - '/with/str/' # slash at the end
           - '/with//'
           - '/with'
@@ -47,22 +60,29 @@ paths:
     parameters:
       - name: param1
         in: path
+        required: true
         schema:
           type: string
-          const: c
+          enum: [c]
       - name: param2
         in: path
+        required: true
         schema:
           type: integer
       - name: param3
         in: path
-        schema: true
+        required: true
+        schema:
+          type: string
     get:
-      $tests:
-        match:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct:
           - '/few-params/c/2/ok'
           - '/few-params/c/2/2.0'
-        notMatch:
+        wrong:
           - '/with/str/'
           - '/with//'
           - '/with'
@@ -72,56 +92,75 @@ paths:
     parameters:
       - name: param
         in: path
-        schema: false
+        required: true
+        schema:
+          type: string
     get:
-      $tests:
-        match: []
-        notMatch:
-          - '/schema-false/param'
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct: []
+        wrong:
           - '/schema-false/param/'
   /with/slash/at/the/end/:
     get:
-      $tests:
-        match:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        correct:
           - '/with/slash/at/the/end/'
-        notMatch:
+        wrong:
           - '/with/slash/at/the/end'
           - '/with/slash/at/the/end/extra-path'
   /params-mix/{param1}/middle/{param2}:
     parameters:
       - name: param1
         in: path
+        required: true
         schema:
           type: string
     get:
+      responses:
+        'default':
+          description: 'simple test'
       parameters:
         - name: param2
           in: path
+          required: true
           schema:
             type: integer
-      $tests:
-        match:
+      x-tests:
+        correct:
           - '/params-mix/ok/middle/1'
           - '/params-mix/ok/middle/1.0'
-        notMatch:
+        wrong:
           - '/params-mix'
           - '/params-mix/middle/str/1.1'
           - '/params-mix/middle/ok/1/'
     post:
+      responses:
+        'default':
+          description: 'simple test'
       parameters:
         - name: param2
           in: path
+          required: true
           schema:
             type: boolean
-      $tests:
-        match:
+      x-tests:
+        correct:
           - '/params-mix/ok/middle/true'
-        notMatch:
+        wrong:
           - '/params-mix'
           - '/params-mix/middle/str/yes'
           - '/params-mix/middle/ok/true/'
   /non-declared-params/{param1}/{param2}:
     get:
-      $tests:
-        notMatch:
+      responses:
+        'default':
+          description: 'simple test'
+      x-tests:
+        wrong:
           - '/everything'
